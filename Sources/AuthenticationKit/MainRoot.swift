@@ -25,16 +25,23 @@ public class MainRoot {
     
     private static let tokenKey: String = "kAccessToken"
     
-    public func makeViewModel() -> AuthenticationViewModel {
-        let useCase = APIAuthenticationUseCase(
+    private func makeAPIUseCase() -> APIAuthenticationUseCase {
+        APIAuthenticationUseCase(
             httpClient: httpClient,
             tokenStore: { [weak self] token in
                 let encoder = JSONEncoder()
                 self?.secureStorage.store(data: try! encoder.encode(token), key: Self.tokenKey)
             }
-        ).intercept { [weak self] user in
-            self?.currentUser = user
-        }
+        )
+    }
+    
+    public func makeViewModel() -> AuthenticationViewModel {
+        let useCase = makeAPIUseCase()
+            .addValidation()
+            .intercept { [weak self] user in
+                self?.currentUser = user
+            }
+            
         
         let viewModel = AuthenticationViewModel(
             authenticationUseCase: useCase
